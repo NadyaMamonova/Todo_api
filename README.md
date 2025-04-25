@@ -41,7 +41,7 @@
 
     Клонируйте репозиторий:
 
-bash
+
 
 git clone https://github.com/NadyaMamonova/Todo_api.git
 
@@ -49,7 +49,6 @@ cd todo_api
 
     Запустите проект:
 
-    bash
 
     docker-compose up --build -d
 
@@ -98,13 +97,11 @@ todo_api/
 
 Для запуска тестов:
 
-    bash
 
     docker-compose up tests
 
 Или локально (если БД запущена):
-    
-    bash
+
 
     pytest tests/
 
@@ -120,19 +117,13 @@ todo_api/
 
     Остановите контейнеры:
 
-    bash
-
     docker-compose down
 
 Пересоберите образы:
 
-    bash
-
     docker-compose build --no-cache
 
 Запустите заново:
-
-    bash
 
     docker-compose up -d
 
@@ -142,19 +133,14 @@ todo_api/
 
 Проверьте логи:
 
-    bash
-
     docker-compose logs app
 
 Проверьте подключение к БД:
-
-    bash
 
     docker-compose exec db psql -U postgres -d todo_db -c "\dt"
 
 Очистите volumes и перезапустите:
 
-    bash
 
     docker-compose down -v
     docker-compose up --build
