@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    volumes:
+      - ./app:/app/app
+      - ./migrations:/app/migrations
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/todo_db
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=todo_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  tests:
+    build: .
+    volumes:
+      - ./app:/app/app
+      - ./tests:/app/tests
+    environment:
+      - PYTHONPATH=/app
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/test_todo_db
+    depends_on:
+      - db
+    command: >
+      sh -c "while ! pg_isready -h db -U postgres; do sleep 1; done &&
+      pytest /app/tests -v"
+    restart: on-failure
+
+volumes:
+  postgres_data:
