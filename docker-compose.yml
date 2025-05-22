@@ -1,53 +1,45 @@
-version: '3.8'
-
 services:
-  app:
-    build: .
-    volumes:
-      - ./app:/app/app
-      - ./migrations:/app/migrations
-    ports:
-      - "8000:8000"
-    environment:
-      - PYTHONPATH=/app
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/todo_db
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: unless-stopped
-
   db:
-    image: postgres:13
+    image: postgres:14
     environment:
-      - POSTGRES_DB=todo_db
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=test_todo_db
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./migrations:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    ports:
-      - "5432:5432"
-    restart: unless-stopped
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+    networks:
+      - todo_network
 
   tests:
-    build: .
-    volumes:
-      - ./app:/app/app
-      - ./tests:/app/tests
+    build:
+      context: .
+      dockerfile: Dockerfile.tests
     environment:
-      - PYTHONPATH=/app
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/test_todo_db
+      - PGPASSWORD=postgres
+      - TESTING=true
+      - DB_HOST=db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - TEST_DB_NAME=test_todo_db
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    networks:
+      - todo_network
     command: >
-      sh -c "while ! pg_isready -h db -U postgres; do sleep 1; done &&
-      pytest /app/tests -v"
-    restart: on-failure
+      sh -c "python -m pytest -xvs --cov=app --cov-report=term-missing"
 
 volumes:
   postgres_data:
+
+networks:
+  todo_network:
+    driver: bridge
